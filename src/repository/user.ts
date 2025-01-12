@@ -29,6 +29,22 @@ const UserRepository = {
           throw new Error("Đăng ký thất bại, vui lòng thử lại.")
         }
       },
+
+      async getProfileByGoogle(google: string) {
+        const userRepository = getRepository(User);
+    
+        try {
+          const userDb = await userRepository.findOneOrFail({
+            where: { google: google},
+          });
+          const { username, password, ...others } = userDb;
+    
+          return others;
+        } catch (error) {
+          console.log(error);
+          return null;
+        }
+      },
 };
 
 export default UserRepository;

@@ -23,16 +23,14 @@ passport.deserializeUser(async function (user: any, done: any) {
 });
 
 // login
-
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || "clientId",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "clientSecret",
-    callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/auth/google/callback"
+    callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5001/auth/google/callback"
 },
     async (accessToken: any, refreshToken: any, profile: any, done: any) => {
         let user = new User();
-        user.id = profile.id;
-        // user.email = profile.emails[0].value;
+        // user.id = profile.id;
         user.fullname = profile.displayName;
 
         try {
@@ -41,17 +39,15 @@ passport.use(new GoogleStrategy({
             let userDb: User | null = await userRepository.findOne({
                 where: { google: profile.emails[0].value }
             });
-
+            console.log("USerDB password: ", userDb, user)
             if (!userDb) {
                 // user does not exist yet => add account to user db
                 user.google = profile.emails[0].value;
-                // await userRepository.save(user);
+                const userDb = await userRepository.save(user);
 
-                return done(null, user);
+                return done(null, userDb);
             }
-            const { password, ...others } = userDb;
-
-            
+            const { username, password, ...others } = userDb;
 
             return done(null, others);
         } catch (error: any) {

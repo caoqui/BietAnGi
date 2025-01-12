@@ -61,67 +61,65 @@ const authController: any = {
       user.password = await bcrypt.hash(user.password, salt);
       const userSave = await UserRepository.registerUser(user);
 
-      return res.status(201).json({data: userSave});
+      return res.status(201).json({ data: userSave });
     } catch (error: any) {
-      return res.status(500).json(error.msg||"Hệ thống lỗi, vui lòng thử lại sau.");
+      return res.status(500).json(error.msg || "Hệ thống lỗi, vui lòng thử lại sau.");
     }
   },
 
   googleAuth: async (req: Request, res: Response) => {
-    const userIdAccount: any = req.headers["userId"];
+    const profile: any = req.user;
+    console.log(profile);
 
+    try {
+      if (!profile || !profile.id || !profile.google)
+        return res.status(400).json("Dữ liệu tài khoản google không hợp lệ.")
+
+      const accessToken = await authController.generateAccessToken({ id: profile.id });
+      const refreshToken = await authController.generateRefreshToken({ id: profile.id });
+      const { username, password, ...other } = profile;
+
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: true,
+        path: "/",
+        sameSite: "none",
+      });
+
+      return res.status(200).json({
+        refreshToken,
+        user: other,
+        accessToken,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json("Hệ thống lỗi, vui lòng thử lại sau.");
+    }
   },
 
   // [POST] /login
   loginUser: async (req: any, res: any) => {
-    const username = req.body.username;
-    const passwordInput = req.body.password;
-    const androidFcmToken = req.body.androidFcmToken;
+    const username: string = req.body.username;
+    const passwordInput: string = req.body.password;
 
-    if (username === undefined || passwordInput === undefined) {
-      return res.json({
-        status: "failed",
-        msg: "Missing required input data",
-      });
-    }
-
-    if (typeof username !== "string" || typeof passwordInput !== "string") {
-      return res.json({
-        status: "failed",
-        msg: "Invalid data types for input (username should be string, password should be string)",
-      });
-    }
+    if (!username || !passwordInput || typeof username !== "string" || typeof passwordInput !== "string")
+      return res.status(400).json("Username hoặc password chưa chính xác.");
 
     try {
       // get user from database
-      const userRepository = getRepository(User);
-      const userDb = await userRepository.findOne({
-        where: { username: username },
-      });
-
-      if (userDb == null) {
-        return res.json({
-          status: "failed",
-          msg: "Username or password is incorect.",
-        });
-      }
+      const userDb = await UserRepository.getProfileByUsername(username)
+      if (!userDb || !userDb.password)
+        return res.status(400).json("Username hoặc password chưa chính xác.");
 
       const validPassword = await bcrypt.compare(
         passwordInput,
         userDb.password
       );
+      if (!validPassword)
+        return res.status(400).json("Username hoặc password chưa chính xác.");
 
-      if (!validPassword) {
-        return res.json({
-          status: "failed",
-          msg: "Username or password is incorect.",
-        });
-      }
-      const { accessToken, refreshToken } = await authController.genToken(
-        userDb
-      );
-
-      refreshTokens.push(refreshToken);
+      const accessToken = await authController.generateAccessToken({ id: userDb.id });
+      const refreshToken = await authController.generateRefreshToken({ id: userDb.id });
 
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
@@ -132,58 +130,27 @@ const authController: any = {
 
       const { password, ...others } = userDb;
 
-      return res.json({
+      return res.status(200).json({
         refreshToken,
         user: others,
         accessToken,
-        status: "success",
-        msg: "login successfully!",
       });
     } catch (error) {
-      // console.log(error);
-      res.json({ status: "failed", msg: "login failure." });
+      console.log(error);
+      return res.status(500).json("Hệ thống lỗi, vui lòng thử lại sau.");
     }
   },
 
   // [POST] /refresh
   requestRefreshToken: async (req: any, res: any) => {
-    const refreshToken = req.cookies.refreshToken;
+    const id = req.user;
+    const newAccessToken = authController.generateAccessToken({id})
 
-    if (!refreshToken)
-      return res.json({ status: "failed", msg: "401 Unauthorized!" });
+    return res.status(201).json({
+      accessToken: newAccessToken
+    });
+  }
 
-    // check if we have a refresh token but it isn't our refresh token
-    if (!refreshTokens.includes(refreshToken)) {
-      return res.json({ status: "failed", msg: "403 Forbidden!" });
-    }
-
-    jwt.verify(
-      refreshToken,
-      process.env.JWT_REFRESH_KEY as string,
-      (err: any, user: any) => {
-        if (err) {
-          console.log(err);
-        }
-        user.user_id = user.userId;
-        // create new JWT_ACCESS_TOKEN
-        const newAccessToken = authController.generateAccessToken(user);
-
-        return res.json({
-          accessToken: newAccessToken,
-          refreshToken: refreshToken,
-        });
-      }
-    );
-  },
-
-  // [POST] /logout
-  // logoutUser: async (req: Request, res: Response) => {
-  //   refreshTokens = refreshTokens.filter(
-  //     (token) => token !== req.cookies.refreshToken
-  //   );
-  //   res.clearCookie("refreshToken");
-  //   res.json("Logged out successfully!");
-  // },
 };
 
 export default authController;

@@ -27,7 +27,29 @@ const middlewareController = {
       return res.json({ status: "failed", msg: "You're not authenticated!" });
     }
   },
-
+  verifyRefreshToken: (req: Request, res: Response, next: NextFunction): any => {
+    const refreshToken: string | undefined =
+      req.cookies.refreshToken || req.headers["authorization"];
+  
+    if (!refreshToken) {
+      // Kết thúc request nếu không có refreshToken
+      return res.status(401).json("RefreshToken của bạn chưa chính xác.");
+    }
+  
+    jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_KEY as string,
+      (err: any, user: any) => {
+        if (err) {
+          return res.status(401).json("Token sai.");
+        }
+  
+        (req as any).user = user.id;
+        next();
+      }
+    );
+  }
+  
 };
 
 export default middlewareController;

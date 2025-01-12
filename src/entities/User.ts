@@ -39,10 +39,6 @@ export class User {
   @Length(0, 200)
   google!: string;
 
-  @Column({ nullable: true })
-  @Length(0, 200)
-  refresh_token!: string;
-
   @OneToMany(() => ListDish, (list) => list.user)
   list_dish!: ListDish[];
 
