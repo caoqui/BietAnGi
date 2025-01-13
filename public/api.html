@@ -52,6 +52,8 @@
     }</li>
     <h3>[GET] /auth/google</h3>
     <li> Gọi đến api này để lấy code đăng nhập gửi qua callback url. </li>
+    <li>Code sẽ trả về fe với url http://localhost:3000/auth/google/callback?code=...</li>
+    <li>Lấy code và gửi đến backend theo path bên dưới kèm theo code</li>
     <h3>[GET] /auth/google/callback?code=...</h3>
     Gọi đến và nhận lại dữ liệu:
     <li>{"refreshToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJiMmE4YWE0MS00MzYyLTRkNjAtOGFkOS1iZDYzZjYxN2MwZjUiLCJpYXQiOjE3MzY2NzIxNjIsImV4cCI6MTczNzg4MTc2Mn0.Hyjfq5iVjqJhiInaInSge6-teVHazx3GGjwmiPYC9ak","user":{"fullname":"qui cao dinh","google":"caodinhqui.fit@gmail.com","id":"b2a8aa41-4362-4d60-8ad9-bd63f617c0f5","avatar":"https://e7.pngegg.com/pngimages/914/653/png-clipart-silhouette-avatar-business-people-silhouettes-animals-public-relations.png"},"accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJiMmE4YWE0MS00MzYyLTRkNjAtOGFkOS1iZDYzZjYxN2MwZjUiLCJpYXQiOjE3MzY2NzIxNjIsImV4cCI6MTczNjY3OTM2Mn0.Nz4fEdrS4evo2sia-0UKoVp1R7U-xLYQM7O4zKYSloQ"}</li>
